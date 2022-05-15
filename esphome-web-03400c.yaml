@@ -1,0 +1,96 @@
+#Set up name
+esphome:
+  name: esphome-web-03400c
+
+#Set up board
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+#logger:
+
+# Enable Home Assistant API
+api:
+
+# Enable OTA
+ota:
+
+
+# Enable WiFi using passwords from secrets.yaml
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "ESPHome-Fan"
+    password: "uitar5MXVo"
+
+#Enable captive portal
+#captive_portal:
+
+#Define binary sensors
+binary_sensor:
+
+  #Fan
+  - platform: gpio
+    name: "Fan"
+    id: "fan_power"
+    device_class: power
+    pin:
+      number: 15
+      inverted: false
+      mode:
+        input: true
+        pullup: false
+  
+  #Fan button
+  - platform: analog_threshold
+    name: "Fan Button"
+    id: "fan_button"
+    device_class: power
+    sensor_id: fan_button_analog
+    threshold: 0.5 # 0.5 chosen as threshold as it is between 0.0v and 0.8v
+    filters:
+      - invert: # Must invert as logic on the Leviton dictates normally high is open and threshold 
+      - delayed_off: 1s # (Safety) Delay off for a second because it is possible for the Espressif to read ultra-quick button presses that the Leviton switch doesn't
+    
+  #Automatic fan mode
+  - platform: template
+    name: "Automatic Fan Mode"
+    lambda: |-
+    
+      //if fan is powered
+      if (id(fan_power).state) {
+        
+        //if button is depressed
+        if(id(fan_button).state){
+          
+          //fan is running and button is depressed, assuming manual start
+          return false;
+        
+        //if button is not depressed  
+        } else {
+          
+          //fan is running but button was not depressed, assuming auto start
+          return true;
+          
+        }
+        
+      //if fan is not powered  
+      } else {
+      
+        // fan is not running, return false
+        return false;
+        
+      }
+      
+#Define sensors
+sensor:
+
+  #Fan button analog
+  - platform: adc
+    name: "Fan Button Analog"
+    pin: A0
+    id: fan_button_analog
+    update_interval: .01s
